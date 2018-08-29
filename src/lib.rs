@@ -92,7 +92,13 @@ type Attributes = HashMap<String, Value>;
 pub struct DeltaOperation {
     #[serde(flatten)]
     pub kind: OpKind,
+    #[serde(default, skip_serializing_if = "empty")]
     pub attributes: Attributes,
+}
+
+/// test weather the attributes are empty and if it therfore can be skipped
+fn empty(value: &Attributes) -> bool {
+    value.len() == 0
 }
 
 impl DeltaOperation {
@@ -163,10 +169,36 @@ pub fn delete(value: usize) -> DeltaOperation {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum OpKind {
     Insert(Value),
     Retain(usize),
     Delete(usize),
+}
+
+#[test]
+fn deserialize_delta_operation() {
+    let op: DeltaOperation = serde_json::from_str(r#"{ "insert": "Hallo" }"#).unwrap();
+    let op: DeltaOperation = serde_json::from_str(r#"{ "retain": 10 }"#).unwrap();
+    let op: DeltaOperation = serde_json::from_str(r#"{ "delete": 10 }"#).unwrap();
+}
+
+#[test]
+fn serilize_delta_operation() {
+    assert_eq!(
+        serde_json::to_string(&insert("Hallo")).unwrap(),
+        r#"{"insert":"Hallo"}"#
+    );
+
+    assert_eq!(
+        serde_json::to_string(&delete(100)).unwrap(),
+        r#"{"delete":100}"#
+    );
+
+    assert_eq!(
+        serde_json::to_string(&retain(100)).unwrap(),
+        r#"{"retain":100}"#
+    );
 }
 
 #[cfg(test)]
