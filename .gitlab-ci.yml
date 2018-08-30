@@ -23,4 +23,5 @@ deploy_job:
   stage: deploy
   script:
     - cargo publish --token $CARGO_TOKEN
-  only: tags
+  only:
+    - tags
