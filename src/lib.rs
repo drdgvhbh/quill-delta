@@ -22,6 +22,7 @@ use std::collections::HashMap;
 ///
 /// ```
 // https://github.com/maximkornilov/types-quill-delta/blob/master/index.d.ts
+// https://github.com/quilljs/delta#insert-operation
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Delta {
     #[serde(flatten)]
@@ -37,23 +38,124 @@ impl Delta {
         Delta { ops: Vec::new() }
     }
 
-    pub fn insert<S: Into<String>>(mut self, text: S, attributes: Attributes) -> Self {
-        self
+    pub fn insert<S: Into<Value>>(self, value: S, attributes: Attributes) -> Self {
+        self.push(DeltaOperation::insert(value).attrs(attributes))
     }
 
-    pub fn delete(mut self, length: usize) -> Self {
-        self
+    pub fn delete(self, length: usize) -> Self {
+        self.push(DeltaOperation::delete(length))
     }
 
-    pub fn retain(mut self, length: usize, attributes: Attributes) -> Self {
-        self
+    pub fn retain(self, length: usize, attributes: Attributes) -> Self {
+        self.push(DeltaOperation::insert(length).attrs(attributes))
     }
 
     pub fn push(mut self, op: DeltaOperation) -> Self {
+        self.ops.push(op);
         self
     }
 
-    pub fn chop(mut self) {}
+    /// Returns a new Delta representing the concatenation of this and another document Delta's operations.
+    pub fn concat(&self, other: &Delta) -> Delta {
+        let mut res = self.clone();
+        if other.ops.len() > 0 {
+            res = res.push(other.ops[0].clone());
+            res.ops.extend(other.ops[1..].iter().cloned());
+        }
+        res
+    }
+
+    /// Returns a Delta representing the difference between two documents.
+    /// Optionally, accepts a suggested index where change took place, often representing a cursor position before change.
+    ///
+    /// ```
+    /// # extern crate quill_delta;
+    /// # use quill_delta::*;
+    ///
+    /// let a: Delta = vec![insert("Hallo")].into();
+    /// let b: Delta = vec![insert("Hallo!")].into();
+    ///
+    /// let diff = a.diff(&b, None);
+    /// // { ops: [{ retain: 5 }, { insert: '!' }] }
+    /// ```
+    pub fn diff(&self, other: &Delta, index: Option<usize>) -> Result<Delta, DiffError> {
+        let strings = [self.to_string()?, other.to_string()?];
+        let mut delta = Delta::new();
+
+        let diffResult = diff(strings[0].as_str(), strings[1].as_str(), index);
+
+        Ok(delta)
+    }
+
+    /// Generate a string with all insert concatenated and non visible thing represented by `NULL_CHARACTER`.
+    fn to_string(&self) -> Result<String, DiffError> {
+        let mut res = String::new();
+        for op in self.iter() {
+            match op {
+                &DeltaOperation {
+                    kind: OpKind::Insert(Value::String(ref val)),
+                    ..
+                } => {
+                    res.push_str(&val[..]);
+                }
+                &DeltaOperation {
+                    kind: OpKind::Insert(_),
+                    ..
+                } => {
+                    res.push(NULL_CHARACTER);
+                }
+                _ => return Err(DiffError::NotADocument),
+            }
+        }
+
+        Ok(res)
+    }
+
+    /// Returns copy of delta with subset of operations.
+    /// `start` - Start index of subset, default to 0
+    /// `end` - End index of subset, defalts to rest of operations
+    pub fn slice(&self, start: usize, end: usize) -> Delta {
+        let mut ops = vec![];
+
+        unimplemented!("all the handling code should go there");
+
+        ops.into()
+    }
+
+    /// Returns a Delta that is equivalent to applying the operations of own Delta, followed by another Delta.
+    /// `other` - Delta to compose
+    pub fn compose(&self, other: &Delta) -> Delta {
+        unimplemented!()
+    }
+
+    /// Transform given Delta against own operations.
+    /// `other` - Delta to transform
+    /// `priority` - Boolean used to break ties. If `true`, then `this` takes priority over `other`, that is, its
+    /// actions are considered to happened "first".
+    pub fn transform(&self, other: &Delta, priority: bool) -> Delta {
+        unimplemented!()
+    }
+
+    /// Transform an index against the delta. Useful for representing cursor/selection positions.
+    /// `index` - index to transform
+    pub fn transformPosition(&self, index: usize, priority: bool) -> usize {
+        unimplemented!()
+    }
+}
+
+//TODO: implement index operator for ranges.
+
+/// placeholder char to embed in diff()
+pub const NULL_CHARACTER: char = '\0';
+
+pub enum DiffError {
+    NotADocument,
+}
+
+fn diff(a: &str, b: &str, index: Option<usize>) {
+    unimplemented!(
+        "diff algorithm should be implemented, use something similar to fast-diff for node."
+    )
 }
 
 impl std::ops::Deref for Delta {
@@ -138,6 +240,12 @@ impl DeltaOperation {
     #[inline(always)]
     pub fn attr<K: Into<String>, V: Into<Value>>(mut self, key: K, value: V) -> Self {
         self.attributes.insert(key.into(), value.into());
+        self
+    }
+
+    /// set multiple attributes at once
+    pub fn attrs<V: Into<HashMap<String, Value>>>(mut self, values: V) -> Self {
+        self.attributes = values.into();
         self
     }
 
