@@ -5,6 +5,7 @@ extern crate serde_json;
 
 use serde_json::Value;
 use std::collections::HashMap;
+use std::usize;
 
 /// Wrapper to manipulate Delta easily
 /// ```
@@ -282,6 +283,113 @@ pub enum OpKind {
     Insert(Value),
     Retain(usize),
     Delete(usize),
+}
+
+pub struct DeltaIterator<'a> {
+    ops: &'a [DeltaOperation],
+    index: usize,
+    offset: usize,
+}
+// https://github.com/quilljs/delta/blob/master/lib/op.js
+impl<'a> DeltaIterator<'a> {
+    pub fn new(ops: &'a [DeltaOperation]) -> Self {
+        DeltaIterator {
+            ops,
+            index: 0,
+            offset: 0,
+        }
+    }
+
+    pub fn has_next(&self) -> bool {
+        self.peek_len() < usize::MAX
+    }
+
+    pub fn next(&mut self, length: usize) {
+        /*
+  if (!length) length = Infinity;
+  var nextOp = this.ops[this.index];
+  if (nextOp) {
+    var offset = this.offset;
+    var opLength = lib.length(nextOp)
+    if (length >= opLength - offset) {
+      length = opLength - offset;
+      this.index += 1;
+      this.offset = 0;
+    } else {
+      this.offset += length;
+    }
+    if (typeof nextOp['delete'] === 'number') {
+      return { 'delete': length };
+    } else {
+      var retOp = {};
+      if (nextOp.attributes) {
+        retOp.attributes = nextOp.attributes;
+      }
+      if (typeof nextOp.retain === 'number') {
+        retOp.retain = length;
+      } else if (typeof nextOp.insert === 'string') {
+        retOp.insert = nextOp.insert.substr(offset, length);
+      } else {
+        // offset should === 0, length should === 1
+        retOp.insert = nextOp.insert;
+      }
+      return retOp;
+    }
+  } else {
+    return { retain: Infinity };
+  }
+        */
+    }
+
+    pub fn peek(&mut self) -> &'a DeltaOperation {
+        &self.ops[self.index]
+    }
+
+    pub fn peek_len(&mut self) -> usize {
+        if let Some(op) = self.ops.get(self.index) {
+            len(op) - self.offset
+        } else {
+            usize::MAX
+        }
+    }
+
+    pub fn peek_type(&mut self) -> Tp {
+        match self.ops.get(self.index) {
+            Some(DeltaOperation {
+                kind: OpKind::Insert(_),
+                ..
+            }) => Tp::Insert,
+            Some(DeltaOperation {
+                kind: OpKind::Delete(_),
+                ..
+            }) => Tp::Delete,
+            _ => Tp::Retain,
+        }
+    }
+
+    pub fn reset(&mut self) {
+        /*
+     if (!this.hasNext()) {
+    return [];
+  } else if (this.offset === 0) {
+    return this.ops.slice(this.index);
+  } else {
+    var offset = this.offset;
+    var index = this.index;
+    var next = this.next();
+    var rest = this.ops.slice(this.index);
+    this.offset = offset;
+    this.index = index;
+    return [next].concat(rest);
+  }
+        */
+    }
+}
+
+pub enum Tp {
+    Delete,
+    Retain,
+    Insert,
 }
 
 #[test]
