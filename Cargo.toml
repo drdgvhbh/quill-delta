@@ -1,6 +1,6 @@
 [package]
 name = "quill-delta"
-version = "0.0.0"
+version = "0.0.1"
 authors = ["Admin <sive@web.de>"]
 description = "quill.js delta format"
 repository = "https://gitlab.com/SimVet/quill-delta"
