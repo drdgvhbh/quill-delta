@@ -139,7 +139,7 @@ impl Delta {
 
     /// Transform an index against the delta. Useful for representing cursor/selection positions.
     /// `index` - index to transform
-    pub fn transformPosition(&self, index: usize, priority: bool) -> usize {
+    pub fn transform_position(&self, index: usize, priority: bool) -> usize {
         unimplemented!()
     }
 }
@@ -306,48 +306,48 @@ impl<'a> DeltaIterator<'a> {
 
     pub fn next(&mut self, length: usize) {
         /*
-  if (!length) length = Infinity;
-  var nextOp = this.ops[this.index];
-  if (nextOp) {
-    var offset = this.offset;
-    var opLength = lib.length(nextOp)
-    if (length >= opLength - offset) {
-      length = opLength - offset;
-      this.index += 1;
-      this.offset = 0;
-    } else {
-      this.offset += length;
-    }
-    if (typeof nextOp['delete'] === 'number') {
-      return { 'delete': length };
-    } else {
-      var retOp = {};
-      if (nextOp.attributes) {
-        retOp.attributes = nextOp.attributes;
-      }
-      if (typeof nextOp.retain === 'number') {
-        retOp.retain = length;
-      } else if (typeof nextOp.insert === 'string') {
-        retOp.insert = nextOp.insert.substr(offset, length);
-      } else {
-        // offset should === 0, length should === 1
-        retOp.insert = nextOp.insert;
-      }
-      return retOp;
-    }
-  } else {
-    return { retain: Infinity };
-  }
-        */
+        if (!length) length = Infinity;
+        var nextOp = this.ops[this.index];
+        if (nextOp) {
+          var offset = this.offset;
+          var opLength = lib.length(nextOp)
+          if (length >= opLength - offset) {
+            length = opLength - offset;
+            this.index += 1;
+            this.offset = 0;
+          } else {
+            this.offset += length;
+          }
+          if (typeof nextOp['delete'] === 'number') {
+            return { 'delete': length };
+          } else {
+            var retOp = {};
+            if (nextOp.attributes) {
+              retOp.attributes = nextOp.attributes;
+            }
+            if (typeof nextOp.retain === 'number') {
+              retOp.retain = length;
+            } else if (typeof nextOp.insert === 'string') {
+              retOp.insert = nextOp.insert.substr(offset, length);
+            } else {
+              // offset should === 0, length should === 1
+              retOp.insert = nextOp.insert;
+            }
+            return retOp;
+          }
+        } else {
+          return { retain: Infinity };
+        }
+              */
     }
 
     pub fn peek(&mut self) -> &'a DeltaOperation {
         &self.ops[self.index]
     }
 
-    pub fn peek_len(&mut self) -> usize {
+    pub fn peek_len(&self) -> usize {
         if let Some(op) = self.ops.get(self.index) {
-            len(op) - self.offset
+            op.len() - self.offset
         } else {
             usize::MAX
         }
@@ -369,20 +369,20 @@ impl<'a> DeltaIterator<'a> {
 
     pub fn reset(&mut self) {
         /*
-     if (!this.hasNext()) {
-    return [];
-  } else if (this.offset === 0) {
-    return this.ops.slice(this.index);
-  } else {
-    var offset = this.offset;
-    var index = this.index;
-    var next = this.next();
-    var rest = this.ops.slice(this.index);
-    this.offset = offset;
-    this.index = index;
-    return [next].concat(rest);
-  }
-        */
+           if (!this.hasNext()) {
+          return [];
+        } else if (this.offset === 0) {
+          return this.ops.slice(this.index);
+        } else {
+          var offset = this.offset;
+          var index = this.index;
+          var next = this.next();
+          var rest = this.ops.slice(this.index);
+          this.offset = offset;
+          this.index = index;
+          return [next].concat(rest);
+        }
+              */
     }
 }
 
@@ -394,9 +394,9 @@ pub enum Tp {
 
 #[test]
 fn deserialize_delta_operation() {
-    let op: DeltaOperation = serde_json::from_str(r#"{ "insert": "Hallo" }"#).unwrap();
-    let op: DeltaOperation = serde_json::from_str(r#"{ "retain": 10 }"#).unwrap();
-    let op: DeltaOperation = serde_json::from_str(r#"{ "delete": 10 }"#).unwrap();
+    let _: DeltaOperation = serde_json::from_str(r#"{ "insert": "Hallo" }"#).unwrap();
+    let _: DeltaOperation = serde_json::from_str(r#"{ "retain": 10 }"#).unwrap();
+    let _: DeltaOperation = serde_json::from_str(r#"{ "delete": 10 }"#).unwrap();
 }
 
 #[test]
