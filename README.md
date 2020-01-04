@@ -1,3 +1,3 @@
 # quill-delta
 
-https://github.com/quilljs/delta
+Forked from https://gitlab.com/SimVet/quill-delta
