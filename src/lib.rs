@@ -25,8 +25,8 @@ use std::usize;
 // https://github.com/maximkornilov/types-quill-delta/blob/master/index.d.ts
 // https://github.com/quilljs/delta#insert-operation
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct Delta {
-    #[serde(flatten)]
     pub ops: Vec<DeltaOperation>,
 }
 
